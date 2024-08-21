@@ -1,0 +1,147 @@
+[gd_scene load_steps=11 format=3 uid="uid://fnp7st2m7hre"]
+
+[ext_resource type="Script" path="res://unit.gd" id="1_rn2b8"]
+[ext_resource type="Texture2D" uid="uid://c63i5fbrmy4dk" path="res://icon.svg" id="2_sf3w0"]
+[ext_resource type="Script" path="res://moving.gd" id="3_g3qbj"]
+[ext_resource type="Script" path="res://attacking.gd" id="4_1h3wn"]
+[ext_resource type="Script" path="res://waiting.gd" id="4_mr1co"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_r7ga0"]
+radius = 256.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_7f5nm"]
+radius = 40.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gwujk"]
+size = Vector2(32, 32)
+
+[sub_resource type="Curve" id="Curve_pmnbh"]
+_data = [Vector2(0.695312, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_mtjdo"]
+_data = [Vector2(0.442708, 0), 0.0, 0.0, 0, 0, Vector2(0.658854, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[node name="Unit" type="CharacterBody2D"]
+script = ExtResource("1_rn2b8")
+
+[node name="Icon" type="Sprite2D" parent="."]
+modulate = Color(1, 0, 1, 1)
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("2_sf3w0")
+
+[node name="VisionArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VisionArea"]
+shape = SubResource("CircleShape2D_r7ga0")
+
+[node name="AttackArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackArea"]
+shape = SubResource("CircleShape2D_7f5nm")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("RectangleShape2D_gwujk")
+
+[node name="UtilityAIAgent" type="UtilityAIAgent" parent="."]
+
+[node name="SensorVision" type="UtilityAIArea2DVisibilitySensor" parent="UtilityAIAgent" node_paths=PackedStringArray("visibility_volume")]
+use_owner_global_position = true
+visibility_volume = NodePath("../../VisionArea")
+
+[node name="TargetInRange" type="UtilityAIBooleanSensor" parent="UtilityAIAgent"]
+
+[node name="TargetIsVisible" type="UtilityAIBooleanSensor" parent="UtilityAIAgent"]
+
+[node name="AggresionLevel" type="UtilityAIFloatRangeSensor" parent="UtilityAIAgent"]
+
+[node name="SuspicionLevel" type="UtilityAIFloatRangeSensor" parent="UtilityAIAgent"]
+
+[node name="Idle" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
+
+[node name="Is Chill" type="UtilityAIConsideration" parent="UtilityAIAgent/Idle" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../AggresionLevel")
+activation_curve = SubResource("Curve_pmnbh")
+
+[node name="Idling" type="UtilityAIAction" parent="UtilityAIAgent/Idle"]
+is_active = false
+script = ExtResource("4_mr1co")
+
+[node name="Patrol" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
+
+[node name="UtilityAIBooleanConsideration" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Patrol"]
+
+[node name="Chase" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
+
+[node name="Should Chase" type="UtilityAIConsiderationGroup" parent="UtilityAIAgent/Chase"]
+
+[node name="Is Mad" type="UtilityAIConsideration" parent="UtilityAIAgent/Chase/Should Chase" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../../AggresionLevel")
+activation_curve = SubResource("Curve_mtjdo")
+
+[node name="Can\'t Reach Target" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Chase/Should Chase" node_paths=PackedStringArray("input_sensor")]
+true_score_value = 0.0
+false_score_value = 1.0
+input_sensor = NodePath("../../../TargetInRange")
+
+[node name="Chasing" type="UtilityAIAction" parent="UtilityAIAgent/Chase"]
+script = ExtResource("3_g3qbj")
+
+[node name="Attack" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
+
+[node name="Should Attack" type="UtilityAIConsiderationGroup" parent="UtilityAIAgent/Attack"]
+
+[node name="Is Mad" type="UtilityAIConsideration" parent="UtilityAIAgent/Attack/Should Attack" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../../AggresionLevel")
+activation_curve = SubResource("Curve_mtjdo")
+
+[node name="Can Hit Target" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Attack/Should Attack" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../../TargetInRange")
+
+[node name="Attacking" type="UtilityAIAction" parent="UtilityAIAgent/Attack"]
+script = ExtResource("4_1h3wn")
+
+[node name="Timer" type="Timer" parent="UtilityAIAgent/Attack/Attacking"]
+wait_time = 0.2
+one_shot = true
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -40.0
+offset_right = 20.0
+grow_horizontal = 2
+grow_vertical = 0
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="WhatDoing" type="Label" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "What Doing?"
+
+[node name="AggresionBar" type="ProgressBar" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[connection signal="area_entered" from="Hurtbox" to="." method="_on_hurtbox_area_entered"]
+[connection signal="action_changed" from="UtilityAIAgent" to="." method="_on_utility_ai_agent_action_changed"]
+[connection signal="behaviour_changed" from="UtilityAIAgent" to="." method="_on_utility_ai_agent_behaviour_changed"]
+[connection signal="timeout" from="UtilityAIAgent/Attack/Attacking/Timer" to="UtilityAIAgent/Attack/Attacking" method="_on_timer_timeout"]
