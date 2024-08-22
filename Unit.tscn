@@ -1,10 +1,11 @@
-[gd_scene load_steps=11 format=3 uid="uid://fnp7st2m7hre"]
+[gd_scene load_steps=14 format=3 uid="uid://fnp7st2m7hre"]
 
 [ext_resource type="Script" path="res://unit.gd" id="1_rn2b8"]
 [ext_resource type="Texture2D" uid="uid://c63i5fbrmy4dk" path="res://icon.svg" id="2_sf3w0"]
 [ext_resource type="Script" path="res://moving.gd" id="3_g3qbj"]
 [ext_resource type="Script" path="res://attacking.gd" id="4_1h3wn"]
 [ext_resource type="Script" path="res://waiting.gd" id="4_mr1co"]
+[ext_resource type="Script" path="res://patroling.gd" id="4_t7plu"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_r7ga0"]
 radius = 256.0
@@ -15,12 +16,20 @@ radius = 40.0
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gwujk"]
 size = Vector2(32, 32)
 
-[sub_resource type="Curve" id="Curve_pmnbh"]
-_data = [Vector2(0.695312, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+[sub_resource type="Curve" id="Curve_fjnm3"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.5, 1), 0.0, 0.0, 0, 0]
 point_count = 2
 
-[sub_resource type="Curve" id="Curve_mtjdo"]
-_data = [Vector2(0.442708, 0), 0.0, 0.0, 0, 0, Vector2(0.658854, 1), 0.0, 0.0, 0, 0]
+[sub_resource type="Curve" id="Curve_tthsy"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.752604, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_x6o2p"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_pmnbh"]
+_data = [Vector2(0.736979, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
 point_count = 2
 
 [node name="Unit" type="CharacterBody2D"]
@@ -57,40 +66,59 @@ shape = SubResource("RectangleShape2D_gwujk")
 use_owner_global_position = true
 visibility_volume = NodePath("../../VisionArea")
 
-[node name="TargetInRange" type="UtilityAIBooleanSensor" parent="UtilityAIAgent"]
+[node name="SensorAttack" type="UtilityAIArea2DVisibilitySensor" parent="UtilityAIAgent" node_paths=PackedStringArray("visibility_volume")]
+visibility_volume = NodePath("../../AttackArea")
+max_expected_entities_found = 1
 
-[node name="TargetIsVisible" type="UtilityAIBooleanSensor" parent="UtilityAIAgent"]
+[node name="TrackingTarget" type="UtilityAIBooleanSensor" parent="UtilityAIAgent"]
 
-[node name="AggresionLevel" type="UtilityAIFloatRangeSensor" parent="UtilityAIAgent"]
+[node name="IsPatrolLocations" type="UtilityAIBooleanSensor" parent="UtilityAIAgent"]
 
-[node name="SuspicionLevel" type="UtilityAIFloatRangeSensor" parent="UtilityAIAgent"]
+[node name="ProximityToEnemy" type="UtilityAIDistanceVector2Sensor" parent="UtilityAIAgent"]
+is_distance_calculated = true
 
-[node name="Idle" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
-
-[node name="Is Chill" type="UtilityAIConsideration" parent="UtilityAIAgent/Idle" node_paths=PackedStringArray("input_sensor")]
-input_sensor = NodePath("../../AggresionLevel")
-activation_curve = SubResource("Curve_pmnbh")
-
-[node name="Idling" type="UtilityAIAction" parent="UtilityAIAgent/Idle"]
-is_active = false
-script = ExtResource("4_mr1co")
+[node name="AggresivityLevel" type="UtilityAIFloatRangeSensor" parent="UtilityAIAgent"]
 
 [node name="Patrol" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
 
-[node name="UtilityAIBooleanConsideration" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Patrol"]
+[node name="UtilityAIConsiderationGroup" type="UtilityAIConsiderationGroup" parent="UtilityAIAgent/Patrol"]
+
+[node name="Can\'t See Enemies" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Patrol/UtilityAIConsiderationGroup" node_paths=PackedStringArray("input_sensor")]
+true_score_value = 0.0
+false_score_value = 1.0
+input_sensor = NodePath("../../../TrackingTarget")
+
+[node name="Should Patrol" type="UtilityAIConsiderationGroup" parent="UtilityAIAgent/Patrol/UtilityAIConsiderationGroup"]
+
+[node name="Is Annoyed" type="UtilityAIConsideration" parent="UtilityAIAgent/Patrol/UtilityAIConsiderationGroup/Should Patrol" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../../../AggresivityLevel")
+activation_curve = SubResource("Curve_fjnm3")
+
+[node name="Need to Investigate" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Patrol/UtilityAIConsiderationGroup/Should Patrol" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../../../IsPatrolLocations")
+
+[node name="Patroling" type="UtilityAIAction" parent="UtilityAIAgent/Patrol"]
+script = ExtResource("4_t7plu")
 
 [node name="Chase" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
 
 [node name="Should Chase" type="UtilityAIConsiderationGroup" parent="UtilityAIAgent/Chase"]
 
 [node name="Is Mad" type="UtilityAIConsideration" parent="UtilityAIAgent/Chase/Should Chase" node_paths=PackedStringArray("input_sensor")]
-input_sensor = NodePath("../../../AggresionLevel")
-activation_curve = SubResource("Curve_mtjdo")
+input_sensor = NodePath("../../../AggresivityLevel")
+activation_curve = SubResource("Curve_tthsy")
 
-[node name="Can\'t Reach Target" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Chase/Should Chase" node_paths=PackedStringArray("input_sensor")]
+[node name="Has Target" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Chase/Should Chase" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../../TrackingTarget")
+
+[node name="Far From Target" type="UtilityAIConsideration" parent="UtilityAIAgent/Chase/Should Chase" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../../ProximityToEnemy")
+activation_curve = SubResource("Curve_x6o2p")
+
+[node name="Can\'t Hit" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Chase/Should Chase" node_paths=PackedStringArray("input_sensor")]
 true_score_value = 0.0
 false_score_value = 1.0
-input_sensor = NodePath("../../../TargetInRange")
+input_sensor = NodePath("../../../SensorAttack")
 
 [node name="Chasing" type="UtilityAIAction" parent="UtilityAIAgent/Chase"]
 script = ExtResource("3_g3qbj")
@@ -100,11 +128,14 @@ script = ExtResource("3_g3qbj")
 [node name="Should Attack" type="UtilityAIConsiderationGroup" parent="UtilityAIAgent/Attack"]
 
 [node name="Is Mad" type="UtilityAIConsideration" parent="UtilityAIAgent/Attack/Should Attack" node_paths=PackedStringArray("input_sensor")]
-input_sensor = NodePath("../../../AggresionLevel")
-activation_curve = SubResource("Curve_mtjdo")
+input_sensor = NodePath("../../../AggresivityLevel")
+activation_curve = SubResource("Curve_tthsy")
 
-[node name="Can Hit Target" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Attack/Should Attack" node_paths=PackedStringArray("input_sensor")]
-input_sensor = NodePath("../../../TargetInRange")
+[node name="Has Target" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Attack/Should Attack" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../../TrackingTarget")
+
+[node name="Can Hit" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Attack/Should Attack" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../../SensorAttack")
 
 [node name="Attacking" type="UtilityAIAction" parent="UtilityAIAgent/Attack"]
 script = ExtResource("4_1h3wn")
@@ -112,6 +143,16 @@ script = ExtResource("4_1h3wn")
 [node name="Timer" type="Timer" parent="UtilityAIAgent/Attack/Attacking"]
 wait_time = 0.2
 one_shot = true
+
+[node name="Idle" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
+
+[node name="Is Chill" type="UtilityAIConsideration" parent="UtilityAIAgent/Idle" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../AggresivityLevel")
+activation_curve = SubResource("Curve_pmnbh")
+
+[node name="Idling" type="UtilityAIAction" parent="UtilityAIAgent/Idle"]
+is_active = false
+script = ExtResource("4_mr1co")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchors_preset = 7
