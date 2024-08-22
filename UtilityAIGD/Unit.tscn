@@ -1,24 +1,20 @@
-[gd_scene load_steps=14 format=3 uid="uid://fnp7st2m7hre"]
+[gd_scene load_steps=13 format=3 uid="uid://fnp7st2m7hre"]
 
-[ext_resource type="Script" path="res://unit.gd" id="1_rn2b8"]
+[ext_resource type="Script" path="res://UtilityAIGD/unit.gd" id="1_rn2b8"]
 [ext_resource type="Texture2D" uid="uid://c63i5fbrmy4dk" path="res://icon.svg" id="2_sf3w0"]
-[ext_resource type="Script" path="res://moving.gd" id="3_g3qbj"]
-[ext_resource type="Script" path="res://attacking.gd" id="4_1h3wn"]
-[ext_resource type="Script" path="res://waiting.gd" id="4_mr1co"]
-[ext_resource type="Script" path="res://patroling.gd" id="4_t7plu"]
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_r7ga0"]
-radius = 256.0
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_7f5nm"]
-radius = 40.0
+[ext_resource type="Script" path="res://UtilityAIGD/moving.gd" id="3_g3qbj"]
+[ext_resource type="Script" path="res://UtilityAIGD/attacking.gd" id="4_1h3wn"]
+[ext_resource type="Script" path="res://UtilityAIGD/waiting.gd" id="4_mr1co"]
+[ext_resource type="Script" path="res://UtilityAIGD/patroling.gd" id="4_t7plu"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gwujk"]
 size = Vector2(32, 32)
 
-[sub_resource type="Curve" id="Curve_fjnm3"]
-_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.5, 1), 0.0, 0.0, 0, 0]
-point_count = 2
+[sub_resource type="CircleShape2D" id="CircleShape2D_m1yae"]
+radius = 122.004
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_7f5nm"]
+radius = 40.0
 
 [sub_resource type="Curve" id="Curve_tthsy"]
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.752604, 1), 0.0, 0.0, 0, 0]
@@ -40,34 +36,39 @@ modulate = Color(1, 0, 1, 1)
 scale = Vector2(0.25, 0.25)
 texture = ExtResource("2_sf3w0")
 
-[node name="VisionArea" type="Area2D" parent="."]
-collision_layer = 0
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="VisionArea"]
-shape = SubResource("CircleShape2D_r7ga0")
-
-[node name="AttackArea" type="Area2D" parent="."]
-collision_layer = 0
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackArea"]
-shape = SubResource("CircleShape2D_7f5nm")
-
 [node name="Hurtbox" type="Area2D" parent="."]
 collision_layer = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
 shape = SubResource("RectangleShape2D_gwujk")
 
+[node name="ToRotate" type="Node2D" parent="."]
+
+[node name="VisionArea" type="Area2D" parent="ToRotate"]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ToRotate/VisionArea"]
+shape = SubResource("CircleShape2D_m1yae")
+
+[node name="CollisionPolygon2D2" type="CollisionPolygon2D" parent="ToRotate/VisionArea"]
+polygon = PackedVector2Array(256, 0, 248, 63, 222, 128, 0, 0, 222, -127, 248, -64)
+
+[node name="AttackArea" type="Area2D" parent="ToRotate"]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ToRotate/AttackArea"]
+shape = SubResource("CircleShape2D_7f5nm")
+
 [node name="UtilityAIAgent" type="UtilityAIAgent" parent="."]
 
 [node name="SensorVision" type="UtilityAIArea2DVisibilitySensor" parent="UtilityAIAgent" node_paths=PackedStringArray("visibility_volume")]
 use_owner_global_position = true
-visibility_volume = NodePath("../../VisionArea")
+visibility_volume = NodePath("../../ToRotate/VisionArea")
 
 [node name="SensorAttack" type="UtilityAIArea2DVisibilitySensor" parent="UtilityAIAgent" node_paths=PackedStringArray("visibility_volume")]
-visibility_volume = NodePath("../../AttackArea")
+visibility_volume = NodePath("../../ToRotate/AttackArea")
 max_expected_entities_found = 1
 
 [node name="TrackingTarget" type="UtilityAIBooleanSensor" parent="UtilityAIAgent"]
@@ -79,25 +80,19 @@ is_distance_calculated = true
 
 [node name="AggresivityLevel" type="UtilityAIFloatRangeSensor" parent="UtilityAIAgent"]
 
-[node name="Patrol" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
+[node name="Investigate" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
 
-[node name="UtilityAIConsiderationGroup" type="UtilityAIConsiderationGroup" parent="UtilityAIAgent/Patrol"]
+[node name="Should Investigate" type="UtilityAIConsiderationGroup" parent="UtilityAIAgent/Investigate"]
 
-[node name="Can\'t See Enemies" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Patrol/UtilityAIConsiderationGroup" node_paths=PackedStringArray("input_sensor")]
+[node name="Can\'t See Enemies" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Investigate/Should Investigate" node_paths=PackedStringArray("input_sensor")]
 true_score_value = 0.0
 false_score_value = 1.0
 input_sensor = NodePath("../../../TrackingTarget")
 
-[node name="Should Patrol" type="UtilityAIConsiderationGroup" parent="UtilityAIAgent/Patrol/UtilityAIConsiderationGroup"]
+[node name="Need to Investigate" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Investigate/Should Investigate" node_paths=PackedStringArray("input_sensor")]
+input_sensor = NodePath("../../../IsPatrolLocations")
 
-[node name="Is Annoyed" type="UtilityAIConsideration" parent="UtilityAIAgent/Patrol/UtilityAIConsiderationGroup/Should Patrol" node_paths=PackedStringArray("input_sensor")]
-input_sensor = NodePath("../../../../AggresivityLevel")
-activation_curve = SubResource("Curve_fjnm3")
-
-[node name="Need to Investigate" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Patrol/UtilityAIConsiderationGroup/Should Patrol" node_paths=PackedStringArray("input_sensor")]
-input_sensor = NodePath("../../../../IsPatrolLocations")
-
-[node name="Patroling" type="UtilityAIAction" parent="UtilityAIAgent/Patrol"]
+[node name="Investigating" type="UtilityAIAction" parent="UtilityAIAgent/Investigate"]
 script = ExtResource("4_t7plu")
 
 [node name="Chase" type="UtilityAIBehaviour" parent="UtilityAIAgent"]
@@ -107,6 +102,7 @@ script = ExtResource("4_t7plu")
 [node name="Is Mad" type="UtilityAIConsideration" parent="UtilityAIAgent/Chase/Should Chase" node_paths=PackedStringArray("input_sensor")]
 input_sensor = NodePath("../../../AggresivityLevel")
 activation_curve = SubResource("Curve_tthsy")
+score = 2.0
 
 [node name="Has Target" type="UtilityAIBooleanConsideration" parent="UtilityAIAgent/Chase/Should Chase" node_paths=PackedStringArray("input_sensor")]
 input_sensor = NodePath("../../../TrackingTarget")
@@ -160,9 +156,9 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -20.0
-offset_top = -40.0
-offset_right = 20.0
+offset_left = -49.0
+offset_top = -74.0
+offset_right = 49.0
 grow_horizontal = 2
 grow_vertical = 0
 size_flags_horizontal = 4
