@@ -6,26 +6,31 @@ enum CONTROLLER_TYPES {
 }
 
 @export var controller: CONTROLLER_TYPES = CONTROLLER_TYPES.BUTTONS
+@export var tilemap_navigation: TileMapNavigation
 
 var MAX_SPEED = 220
 var ACCELERATION = 800
 var FRICTION = 300
 
+@onready var character_controller = $CharacterController
 @onready var Projectile = load("res://Projectile.tscn")
 
+
+func _ready():
+	character_controller.tilemap_navigation = tilemap_navigation
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("right_mouse_button"):
 		if controller == CONTROLLER_TYPES.POINT_AND_CLICK:
-			$CharacterController.set_target_position(event.global_position)
+			character_controller.set_target_position(event.global_position)
 
 func _process(delta: float) -> void:
 	var direction = Vector2.ZERO
 	
 	if controller == CONTROLLER_TYPES.BUTTONS:
-		direction = $CharacterController.get_move_direction_button()
+		direction = character_controller.get_move_direction_button()
 	elif controller == CONTROLLER_TYPES.POINT_AND_CLICK:
-		direction = $CharacterController.get_move_direction_target_position()
+		direction = character_controller.get_move_direction_target_position()
 	
 	if direction != Vector2.ZERO:
 		velocity = velocity.move_toward(direction * MAX_SPEED, ACCELERATION * delta)
