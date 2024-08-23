@@ -30,7 +30,7 @@ func _process(delta: float) -> void:
 	if controller == CONTROLLER_TYPES.BUTTONS:
 		direction = character_controller.get_move_direction_button()
 	elif controller == CONTROLLER_TYPES.POINT_AND_CLICK:
-		direction = character_controller.get_move_direction_target_position()
+		direction = character_controller.get_next_direction_tilemap()
 	
 	if direction != Vector2.ZERO:
 		velocity = velocity.move_toward(direction * MAX_SPEED, ACCELERATION * delta)

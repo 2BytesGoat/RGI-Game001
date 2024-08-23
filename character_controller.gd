@@ -5,7 +5,7 @@ var min_distance_to_target: int = 10
 var tilemap_navigation: TileMapNavigation = null
 var target_global_position: Vector2 # TODO: it moves to 0,0 at start of game
 
-
+# TODO: separate into multiple controller scripts
 func get_move_direction_button() -> Vector2:
 	var direction = Vector2.ZERO
 	direction.x = Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left")
@@ -44,9 +44,12 @@ func get_next_direction_tilemap() -> Vector2:
 		return Vector2.ZERO
 	
 	var next_move_position = tilemap_navigation.get_next_cell_position()
+	if next_move_position == null:
+		return Vector2.ZERO
+	
 	var distance = owner.global_position.distance_to(next_move_position)
 	if distance <= min_distance_to_target:
-		tilemap_navigation.get_next_cell_position()
+		tilemap_navigation.pop_first_navigation_path()
 	
 	var current_speed = (owner.velocity.x ** 2 + owner.velocity.y ** 2) ** 0.5
 	var direction_scale = min(1.0, distance_to_target / current_speed)
